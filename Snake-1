@@ -1,0 +1,156 @@
+#include <iostream>
+#include <windows.h>
+#include <conio.h>
+#include <thread>
+#include <cstdlib>
+#include <ctime>
+
+short map[8][8] {
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,1,2,3,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,-1,0},
+	{0,0,0,0,0,0,0,0},
+};
+struct SH {
+	short h{ 3 };
+	short l{ 5 };
+	short ih{ 6 };
+	short il{ 6 }; //ih, il 为食物
+	bool panb()
+	{
+		return !(h == ih && l == il);
+	}
+};
+SH sHead;
+short sLen{ 3 }, sScore{};
+short SDir{ 1 }; //1, 2, 3, 4 上，下，左，右
+char iC;
+bool loose{ false };
+
+void show()
+{
+	std::string s{ };
+	for (size_t i{ }; i < 8; i++)
+	{
+		for (size_t j{ }; j < 8; j++)
+		{
+			switch (map[i][j])
+			{
+			case 0: s += "  "; break;
+			case -1: s += "00"; break;
+			default: 
+				if (map[i][j] != sLen) s += "()";
+				else s += "[]";
+			}
+		}
+		s += "\n";
+	}
+	system("cls");
+	std::cout << s;
+}
+
+void dir()
+{
+	for(;;)
+	{
+		iC = _getch();
+		iC = 'A' <= iC && iC <= 'Z' ? iC - 32 : iC;
+		switch (iC)
+		{
+		case 'w':SDir = 1; break;
+		case 's': SDir = 2; break;
+		case 'a': SDir = 3; break;
+		case 'd': SDir = 4; break;
+		}
+	}
+}
+
+void refood()
+{
+	unsigned seed;
+	seed = time(0);
+	srand(seed);
+	sHead.ih = rand() % 8;
+	sHead.il = rand() % 8;
+	map[sHead.ih][sHead.il] = -1;
+}
+
+short addN(short &a)
+{
+	if (++a == 8)
+	{
+		a = 0;
+	}
+	return a;
+}
+short subN(short& a)
+{
+	if (--a == -1)
+	{
+		a = 7;
+	}
+	return a;
+}
+
+int main()
+{
+	std::thread Direction(dir);
+	Direction.detach();
+
+	
+	for (;; Sleep(80))
+	{
+		
+		show();
+		std::cout << sScore;
+
+		switch (SDir)
+		{
+		case 1: 
+			if (map[subN(sHead.h)][sHead.l] <= 0) map[sHead.h][sHead.l] = sLen + 1;
+			else loose = true; break;
+
+		case 2: 
+			if (map[addN(sHead.h)][sHead.l] <= 0) map[sHead.h][sHead.l] = sLen + 1;
+			else loose = true; break;
+
+		case 3:
+			if (map[sHead.h][subN(sHead.l)] <= 0) map[sHead.h][sHead.l] = sLen + 1;
+			else loose = true; break;
+
+		case 4:
+			if (map[sHead.h][addN(sHead.l)] <= 0) map[sHead.h][sHead.l] = sLen + 1;
+			else loose = true; break;
+		}
+
+		if (loose)
+		{
+			std::cout << "你输了";
+			for (;;);
+		}
+
+		if(sHead.panb())
+		{
+			for (size_t i{ }; i < 8; i++)
+			{
+				for (size_t j{ }; j < 8; j++)
+				{
+					if (map[i][j] > 0)
+					{
+						map[i][j] -= 1;
+					}
+				}
+			}
+		}
+		else
+		{
+			sLen++;
+			sScore++;
+			refood();
+		}
+	}
+}
